@@ -1,0 +1,20 @@
+{
+  "name": "litra",
+  "version": "0.0.1",
+  "description": "Cross-platform Logitech® Litra Glow control",
+  "main": "./dist/main/main.js",
+  "author": {
+    "name": "Ivan Zakharchanka",
+    "email": "3axap4eHko.development@gmail.com",
+    "url": "https://github.com/3axap4eHko"
+  },
+  "scripts": {
+    "electron-rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
+    "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts",
+    "postinstall": "npm run electron-rebuild && npm run link-modules"
+  },
+  "dependencies": {
+    "usb": "^2.2.0"
+  },
+  "license": "Apache-2.0"
+}
