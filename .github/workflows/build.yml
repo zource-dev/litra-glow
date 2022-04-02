@@ -1,0 +1,70 @@
+name: CI/CD
+
+on: [push, pull_request]
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-18.04]
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v1
+
+      - name: Install Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      - name: Install linux libs
+        if: ${{ matrix.os == 'ubuntu-18.04' }}
+        run: |
+          sudo apt-get install libusb-1.0-0-dev
+          sudo apt-get install libudev-dev
+
+      - name: Install
+        run: |
+          yarn config set registry https://registry.npmjs.org
+          yarn config get registry
+          yarn
+
+      - name: Build
+        run: |
+          yarn build
+
+      - name: Test
+        run: |
+          yarn lint
+          yarn test
+
+      - name: Package
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          yarn package
+
+      - name: Publish Linux
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.os == 'ubuntu-18.04' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          yarn electron-builder --publish onTagOrDraft --linux
+
+      - name: Publish Windows
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.os == 'windows-latest' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          yarn electron-builder --publish onTagOrDraft --win
+
+      - name: Publish MacOS
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && matrix.os == 'macos-latest' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: |
+          yarn add -D dmg-license
+          yarn electron-builder --publish onTagOrDraft --mac

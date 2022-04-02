@@ -113,9 +113,7 @@
       "./assets/**"
     ],
     "publish": {
-      "provider": "github",
-      "owner": "3axap4eHko",
-      "repo": "litra"
+      "provider": "github"
     }
   },
   "repository": {
