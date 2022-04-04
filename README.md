@@ -2,13 +2,21 @@
 
 Opensource Cross-platform Logitech® Litra Glow control
 
+## Requirements
+
+```bash
+sudo echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c900", MODE="0666"' > /etc/udev/rules.d/50-litra-glow.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
 ## Download
 
 Please check [releases](https://github.com/zource-dev/litra-glow/releases) for downloads
 
 ## Screenshot
 
-![The San Juan Mountains are beautiful!](assets/screenshot.jpg 'San Juan Mountains')
+![Logitech® Litra Glow UI](assets/screenshot.jpg 'Logitech® Litra Glow UI')
 
 ## License
 
