@@ -5,6 +5,8 @@ module.exports = {
     'import/no-unresolved': 'error',
     'react-hooks/exhaustive-deps': 'off',
     'react/react-in-jsx-scope': 'off',
+    'default-case': 'off',
+    'no-restricted-syntax': 'off',
   },
   parserOptions: {
     ecmaVersion: 2020,

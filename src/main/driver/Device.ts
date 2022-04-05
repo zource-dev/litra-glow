@@ -1,28 +1,48 @@
 import { usb, findByIds } from 'usb';
-import Interface from './Interface';
+import { Interface } from 'usb/dist/usb/interface';
+import type * as USBEndpoint from 'usb/dist/usb/endpoint';
 import promised from '../utils/promised';
+
+interface EndpointIn extends USBEndpoint.InEndpoint {
+  direction: 'in';
+}
+
+interface EndpointOut extends USBEndpoint.OutEndpoint {
+  direction: 'out';
+}
 
 export interface DeviceInterface {
   vendorId: number;
   productId: number;
-  interface(addr: number): Interface;
+  ifaceAddr: number;
+  write(addr: number, buffer: Buffer): Promise<number>;
+  read(addr: number, size?: number): AsyncGenerator<Buffer | undefined, void, unknown>;
   dispose(): Promise<void>;
 }
 
 export default class Device implements DeviceInterface {
-  private static devices = new Set<usb.Device>();
-
-  private interfaces = new Map<number, Interface>();
-
   private device: usb.Device;
 
-  constructor(public readonly vendorId: number, public readonly productId: number) {
+  private iface: Interface;
+
+  private reattach = false;
+
+  private disposing = false;
+
+  constructor(public readonly vendorId: number, public readonly productId: number, public readonly ifaceAddr: number = 0) {
     const device = findByIds(vendorId, productId);
     if (device) {
       try {
         device.open();
+        const iface = device.interface(ifaceAddr);
+        if (iface.isKernelDriverActive()) {
+          iface.detachKernelDriver();
+          this.reattach = true;
+        }
+        iface.claim();
+
         this.device = device;
-        Device.devices.add(this.device);
+        this.iface = iface;
       } catch (e) {
         device.close();
         throw e;
@@ -34,13 +54,23 @@ export default class Device implements DeviceInterface {
     ['SIGTERM', 'SIGINT'].map((event) => process.on(event, () => this.dispose()));
   }
 
-  interface(addr: number) {
-    if (!this.interfaces.has(addr)) {
-      const iface = new Interface(this.device.interface(addr));
-      this.interfaces.set(addr, iface);
+  async write(addr: number, buffer: Buffer) {
+    const endpoint = this.iface.endpoint(addr) as EndpointIn | EndpointOut | undefined;
+    if (endpoint?.direction === 'out') {
+      return promised(endpoint.transfer, endpoint, buffer);
     }
+    return 0;
+  }
 
-    return this.interfaces.get(addr) as Interface;
+  async *read(addr: number, size = 64) {
+    const endpoint = this.iface.endpoint(addr) as EndpointIn | EndpointOut | undefined;
+    if (endpoint?.direction === 'in') {
+      while (!this.disposing) {
+        // eslint-disable-next-line no-await-in-loop
+        const data = await promised(endpoint.transfer, endpoint, size);
+        yield data;
+      }
+    }
   }
 
   async reset() {
@@ -48,7 +78,11 @@ export default class Device implements DeviceInterface {
   }
 
   async dispose() {
-    await Promise.all([...this.interfaces.values()].map(async (iface) => iface.dispose()));
+    this.disposing = true;
+    await promised(this.iface.release, this.iface).catch(Boolean);
+    if (this.reattach) {
+      this.iface.attachKernelDriver();
+    }
     this.device.close();
   }
 }

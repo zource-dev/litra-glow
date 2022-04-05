@@ -1,9 +1,8 @@
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 import Path from 'path';
-import { app, BrowserWindow, shell, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, Menu, Tray } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-// import MenuBuilder from './build-menu';
 import { resolveHtmlPath, loadConfig, saveConfig } from './util';
 import * as Litra from './providers/logitech/litra';
 
@@ -48,33 +47,11 @@ const createWindow = async () => {
     await installExtensions();
   }
 
-  const device = Litra.create();
-  app.once('window-all-closed', async () => {
-    (await device).dispose();
-  });
-
-  ipcMain.on('config-save', async (_, config: any) => {
-    await saveConfig(configFilename, config);
-  });
-
-  ipcMain.on('litra-state', async (_: any, state: boolean) => {
-    Litra.setState(await device, state);
-  });
-  ipcMain.on('litra-brightness', async (_: any, level: number) => {
-    Litra.setBrightness(await device, level);
-  });
-  ipcMain.on('litra-temperature', async (_: any, level: number) => {
-    Litra.setTemperature(await device, level);
-  });
-
   ipcMain.on('minimize', async () => {
     const win = BrowserWindow.getFocusedWindow();
-    if (win?.isMinimized()) {
-      win.restore();
-    } else {
-      win?.minimize();
-    }
+    win?.hide();
   });
+
   ipcMain.on('close', async () => {
     const win = BrowserWindow.getFocusedWindow();
     win?.close();
@@ -122,40 +99,59 @@ const createWindow = async () => {
   });
 
   Menu.setApplicationMenu(null);
-  // const menuBuilder = new MenuBuilder(mainWindow);
-  // menuBuilder.buildMenu();
 
-  // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
     shell.openExternal(edata.url);
     return { action: 'deny' };
   });
   // mainWindow.webContents.openDevTools();
 
-  // Remove this if your app does not use auto updates
-  // eslint-disable-next-line
-  new AppUpdater();
+  const updater = new AppUpdater();
+  log.debug('Updater', updater);
+
+  return mainWindow;
 };
 
-/**
- * Add event listeners...
- */
-
 app.on('window-all-closed', () => {
-  // Respect the OSX convention of having the application in memory even
-  // after all windows have been closed
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
+const device = Litra.create();
+
 app
   .whenReady()
-  .then(() => {
+  .then(async () => {
+    const assetsPath = app.isPackaged ? Path.join(process.resourcesPath, 'assets') : 'assets';
+    const iconPath = Path.join(assetsPath, 'icon.png');
+
+    const tray = new Tray(iconPath);
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'Show/Hide', click: () => (mainWindow?.isVisible() ? mainWindow.hide() : mainWindow?.show()) },
+      { label: 'Quit', click: () => app.quit() },
+    ]);
+    tray.setToolTip('This is my application.');
+    tray.setContextMenu(contextMenu);
+
     createWindow();
+
+    Litra.listen(device, (name, value) => mainWindow?.webContents.send('litra-update', [name, value]));
+
+    ipcMain.on('config-save', async (_, config: any) => {
+      await saveConfig(configFilename, config);
+    });
+    ipcMain.on('litra-state', async (_: any, state: boolean) => {
+      Litra.setState(device, state);
+    });
+    ipcMain.on('litra-brightness', async (_: any, level: number) => {
+      Litra.setBrightness(device, level);
+    });
+    ipcMain.on('litra-temperature', async (_: any, level: number) => {
+      Litra.setTemperature(device, level);
+    });
+
     app.on('activate', () => {
-      // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
       if (mainWindow === null) createWindow();
     });
   })

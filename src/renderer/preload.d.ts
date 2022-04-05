@@ -1,17 +1,18 @@
 declare global {
   interface Window {
-    electron: {
-      saveConfig: (config: any) => void;
-      litra: {
-        setState(state: boolean): void;
-        setBrightness(level: number): void;
-        setTemperature(level: number): void;
-      };
-      win: {
-        donate: () => void;
-        minimize: () => void;
-        close: () => void;
-      };
+    config: {
+      save: (config: any) => void;
+    };
+    litra: {
+      setState(state: boolean): void;
+      setBrightness(level: number): void;
+      setTemperature(level: number): void;
+      onUpdate(callback: (update: [string, number]) => void): void;
+    };
+    win: {
+      donate: () => void;
+      minimize: () => void;
+      close: () => void;
     };
   }
 }

@@ -52,13 +52,26 @@ export default function App({ config }: Props) {
   const [temperature, setTemperature] = useState(config.temperature);
 
   useEffect(() => {
-    window.electron?.litra.setState(state);
-    window.electron?.litra.setBrightness(brightness);
-    window.electron?.litra.setTemperature(temperature);
+    window?.litra.setState(state);
+    window?.litra.setBrightness(brightness);
+    window?.litra.setTemperature(temperature);
+    window?.litra.onUpdate(([name, value]) => {
+      switch (name) {
+        case 'power':
+          setState(!!value);
+          break;
+        case 'brightness':
+          setBrightness(value);
+          break;
+        case 'temperature':
+          setTemperature(value);
+          break;
+      }
+    });
   }, []);
 
   useEffect(() => {
-    window.electron?.saveConfig({
+    window.config?.save({
       brightness,
       temperature,
     });
@@ -66,16 +79,16 @@ export default function App({ config }: Props) {
 
   const handleStateChange = (value: boolean) => {
     setState(value);
-    window.electron.litra.setState(value);
+    window.litra.setState(value);
   };
 
   const handleBrightnessChange = (value: number) => {
-    window.electron.litra.setBrightness(value);
+    window.litra.setBrightness(value);
     setBrightness(value);
   };
 
   const handleTemperatureChange = (value: number) => {
-    window.electron.litra.setTemperature(value);
+    window.litra.setTemperature(value);
     setTemperature(value);
   };
 
@@ -92,13 +105,13 @@ export default function App({ config }: Props) {
             <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 100, flexGrow: 1, WebkitAppRegion: 'drag' }}>
               GLOW
             </Typography>
-            <IconButton aria-label="donate" sx={{ width: 48, height: 48 }} onClick={window.electron?.win.donate}>
+            <IconButton aria-label="donate" sx={{ width: 48, height: 48 }} onClick={window?.win.donate}>
               <CoffeeIcon />
             </IconButton>
-            <IconButton aria-label="minimize" sx={{ borderRadius: 0, width: 48, height: 48 }} onClick={window.electron?.win.minimize}>
+            <IconButton aria-label="minimize" sx={{ borderRadius: 0, width: 48, height: 48 }} onClick={window?.win.minimize}>
               <MinimizeIcon />
             </IconButton>
-            <IconButton aria-label="close" sx={{ borderRadius: 0, width: 48, height: 48 }} onClick={window.electron?.win.close}>
+            <IconButton aria-label="close" sx={{ borderRadius: 0, width: 48, height: 48 }} onClick={window?.win.close}>
               <CloseIcon />
             </IconButton>
           </Toolbar>
@@ -108,8 +121,8 @@ export default function App({ config }: Props) {
             <BrightnessLowIcon />
             <Slider
               aria-label="Brightness"
-              min={1}
-              max={100}
+              min={0x14}
+              max={0xfa}
               value={brightness}
               valueLabelDisplay="auto"
               onChange={(_, level) => setBrightness(level as number)}

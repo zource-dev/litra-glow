@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom';
 import { render } from '@testing-library/react';
 import App from '../renderer/App';
 
@@ -11,6 +10,6 @@ const data = {
 
 describe('App', () => {
   it('should render', () => {
-    expect(render(<App config={data.config} />)).toBeTruthy();
+    expect(render(<App config={data.config} />, { root: 'concurrent' } as any)).toBeTruthy();
   });
 });
