@@ -1,5 +1,5 @@
 {
-  "name": "litra",
+  "name": "litra-app",
   "description": "Cross-platform Logitech® Litra Glow control",
   "scripts": {
     "build": "concurrently \"npm run build:main\" \"npm run build:renderer\"",
@@ -283,5 +283,6 @@
     "semi": true,
     "singleQuote": true,
     "printWidth": 200
-  }
+  },
+  "packageManager": "yarn@3.2.0"
 }

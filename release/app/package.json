@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "litra",
   "version": "0.0.2",
   "description": "Cross-platform Logitech® Litra Glow control",
