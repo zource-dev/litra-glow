@@ -30,3 +30,19 @@ if (process.env.NODE_ENV === 'development') {
     return `file://${Path.resolve(__dirname, '../renderer/', htmlFileName)}?data=${encodeURIComponent(JSON.stringify(data))}`;
   };
 }
+
+export const lazy = <T extends (...args: any) => any>(getter: T) => {
+  const state: {
+    initialized: boolean;
+    value?: ReturnType<T>;
+  } = {
+    initialized: false,
+  };
+  return () => {
+    if (!state.initialized) {
+      state.value = getter();
+      state.initialized = true;
+    }
+    return state.value as ReturnType<T>;
+  };
+};

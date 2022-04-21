@@ -3,6 +3,10 @@ import { Interface } from 'usb/dist/usb/interface';
 import type * as USBEndpoint from 'usb/dist/usb/endpoint';
 import promised from '../utils/promised';
 
+if (process.platform === 'win32') {
+  usb.useUsbDkBackend();
+}
+
 interface EndpointIn extends USBEndpoint.InEndpoint {
   direction: 'in';
 }
@@ -39,7 +43,11 @@ export default class Device implements DeviceInterface {
           iface.detachKernelDriver();
           this.reattach = true;
         }
-        iface.claim();
+        try {
+          iface.claim();
+        } catch (e) {
+          console.error(e);
+        }
 
         this.device = device;
         this.iface = iface;

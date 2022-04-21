@@ -3,7 +3,7 @@ import Path from 'path';
 import { app, BrowserWindow, shell, ipcMain, Menu, Tray } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import { resolveHtmlPath, loadConfig, saveConfig } from './util';
+import { resolveHtmlPath, loadConfig, saveConfig, lazy } from './util';
 import * as Litra from './providers/logitech/litra';
 
 export default class AppUpdater {
@@ -118,8 +118,6 @@ app.on('window-all-closed', () => {
   }
 });
 
-const device = Litra.create();
-
 app
   .whenReady()
   .then(async () => {
@@ -131,24 +129,28 @@ app
       { label: 'Show/Hide', click: () => (mainWindow?.isVisible() ? mainWindow.hide() : mainWindow?.show()) },
       { label: 'Quit', click: () => app.quit() },
     ]);
-    tray.setToolTip('This is my application.');
+    tray.setToolTip('Litra glow control');
     tray.setContextMenu(contextMenu);
 
     createWindow();
 
-    Litra.listen(device, (name, value) => mainWindow?.webContents.send('litra-update', [name, value]));
+    const getDevice = lazy(() => {
+      const device = Litra.create();
+      Litra.listen(device, (name, value) => mainWindow?.webContents.send('litra-update', [name, value]));
+      return device;
+    });
 
     ipcMain.on('config-save', async (_, config: any) => {
       await saveConfig(configFilename, config);
     });
     ipcMain.on('litra-state', async (_: any, state: boolean) => {
-      Litra.setState(device, state);
+      Litra.setState(getDevice(), state);
     });
     ipcMain.on('litra-brightness', async (_: any, level: number) => {
-      Litra.setBrightness(device, level);
+      Litra.setBrightness(getDevice(), level);
     });
     ipcMain.on('litra-temperature', async (_: any, level: number) => {
-      Litra.setTemperature(device, level);
+      Litra.setTemperature(getDevice(), level);
     });
 
     app.on('activate', () => {

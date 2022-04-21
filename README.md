@@ -4,6 +4,8 @@ Opensource Cross-platform Logitech® Litra Glow control
 
 ## Requirements
 
+### Linux
+
 ```bash
 sudo echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c900", MODE="0666"' > /etc/udev/rules.d/50-litra-glow.rules
 sudo udevadm control --reload-rules
