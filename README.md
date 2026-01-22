@@ -1,3 +1,5 @@
+# Project is deprecated in favor of [Litra](https://github.com/3axap4eHko/litra)
+
 # Litra
 
 Opensource Cross-platform Logitech® Litra Glow control
